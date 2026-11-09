@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0F3D3E">
+<meta name="description" content="TripSplit – shared expenses for the Sarangpur road trip.">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="./favicon-16.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TripSplit">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>TripSplit • Sarangpur Trip</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+ --night:#0A0F14;--deep:#0F3D3E;--teal:#2E6F73;--mist:#7FB3B8;
+ --cream:#EADCC8;--ember:#C6601F;
+ --navy:var(--night);--blue:var(--teal);--green:var(--deep);
+ --gold:var(--ember);--ink:#172326;--muted:#667879;--bg:#f4f0e9;
+ --line:#d8d1c6;--white:#fff;--red:#a7472a
+}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,Segoe UI,Arial,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+header{background:var(--night);color:var(--cream);padding:15px max(20px,calc((100vw - 1180px)/2));display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:0;z-index:5}
+.brand{font-weight:900;letter-spacing:.08em}.brand span{color:var(--mist)}.header-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.wrap{max-width:1180px;margin:auto;padding:24px 20px 70px}.hero{background:linear-gradient(125deg,var(--night) 0%,var(--deep) 48%,var(--teal) 100%);color:#fff;border-radius:22px;padding:28px;margin-bottom:20px;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;width:260px;height:260px;border:1px solid #ffffff2c;border-radius:50%;right:-70px;top:-100px}.eyebrow{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--cream);font-weight:850}.hero h1{font-size:clamp(1.9rem,4vw,3.1rem);line-height:1.05;margin:8px 0}.hero p{color:var(--cream);margin:0;max-width:700px}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:19px;box-shadow:0 8px 24px #14283f08}.s12{grid-column:span 12}.s8{grid-column:span 8}.s7{grid-column:span 7}.s6{grid-column:span 6}.s5{grid-column:span 5}.s4{grid-column:span 4}.s3{grid-column:span 3}
+h2{font-size:1.18rem;color:var(--night);margin:0 0 14px}.muted{color:var(--muted)}.small{font-size:.82rem}.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:var(--teal);font-weight:850;display:block;margin-bottom:6px}
+input,select{width:100%;padding:11px 12px;border:1px solid #ccd9e1;border-radius:10px;background:#fff;color:var(--ink);outline:none}input:focus,select:focus{border-color:var(--teal);box-shadow:0 0 0 3px #7FB3B833}
+button.primary,.btn{border:0;background:var(--teal);color:#fff;padding:11px 16px;border-radius:10px;font-weight:800}.btn.dark{background:var(--navy)}button.soft{border:1px solid var(--line);background:var(--cream);color:var(--night);padding:9px 13px;border-radius:10px;font-weight:750}button.danger{background:#fff0ee;color:var(--red);border:1px solid #f2d2cd;padding:8px 12px;border-radius:9px}
+.row{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.row>*{flex:1;min-width:130px}.stack{display:grid;gap:12px}.metric{font-size:1.7rem;font-weight:900;color:var(--night);letter-spacing:-.03em}.metric.green{color:var(--green)}.metric-label{font-size:.78rem;color:var(--muted)}
+.pills{display:flex;gap:8px;flex-wrap:wrap}.pill{border:1px solid var(--line);padding:8px 12px;border-radius:999px;background:white;font-weight:750}.pill.active{background:var(--blue);border-color:var(--teal);color:white}
+.checkgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.check{border:1px solid var(--line);border-radius:11px;padding:10px;display:flex;gap:8px;align-items:center;background:#fff}.check input{width:auto;accent-color:var(--teal)}
+table{border-collapse:collapse;width:100%;font-size:.88rem}th{text-align:left;background:var(--night);color:var(--cream);padding:10px}td{padding:10px;border-bottom:1px solid var(--line)}tbody tr:nth-child(even){background:#f6f1e9}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.keypad button{padding:13px 6px;border:1px solid var(--line);border-radius:10px;background:#f3eee6;font-weight:850;color:var(--night)}.keypad button:active{background:var(--mist)}
+.amount-display{font-size:2rem;font-weight:900;background:#f6f0e7;border:1px solid var(--line);padding:12px;border-radius:12px;text-align:right;letter-spacing:.02em}
+.member-list{display:flex;gap:8px;flex-wrap:wrap}.member-chip{padding:7px 10px;border-radius:9px;background:#e4efed;color:var(--deep);font-weight:750;font-size:.83rem}
+.expense{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}.expense:last-child{border:0}.expense strong{display:block}.expense small{color:var(--muted)}
+.notice{padding:12px 14px;border-radius:11px;background:#f7ead9;border:1px solid #e2c8a8;color:#70401f;font-size:.87rem}
+.settle{display:flex;justify-content:space-between;gap:10px;padding:12px;border:1px solid var(--line);border-radius:11px;margin:8px 0;background:#fff}
+.authbox{max-width:520px;margin:40px auto}.status{font-size:.82rem;color:var(--mist)}
+.topnav{position:absolute;right:18px;top:66px;display:grid;gap:7px;min-width:190px;padding:10px;background:var(--night);border:1px solid #42605e;border-radius:14px;box-shadow:0 12px 32px #0004;z-index:30}
+.topnav button{background:var(--deep);color:var(--cream);border:0;border-radius:9px;padding:10px 12px;text-align:left;font-size:.88rem}
+.screen{display:none}.screen.active{display:block}.fab{position:fixed;right:22px;bottom:22px;width:58px;height:58px;border:0;border-radius:50%;background:var(--ember);color:white;font-size:32px;line-height:1;box-shadow:0 8px 24px #0004;z-index:25}
+.route-step{padding:13px;border:1px solid var(--line);border-radius:12px;background:#fff;margin:8px 0}
+.history-item{display:flex;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
+@media(max-width:600px){header{position:sticky;flex-direction:row;align-items:center;padding:12px}.topnav{top:60px;right:10px}.wrap{padding:14px 12px 90px}.fab{right:16px;bottom:16px}}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--night);color:var(--cream);padding:11px 16px;border-radius:12px;box-shadow:0 8px 30px #0003;z-index:20;max-width:90vw}
+@media(max-width:850px){.s8,.s7,.s6,.s5,.s4,.s3{grid-column:span 12}.checkgrid{grid-template-columns:repeat(2,1fr)}header{position:sticky;top:0;z-index:50;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px}header>div:first-child{flex:1 1 auto;min-width:0}.header-right{flex:0 0 auto;display:flex;align-items:center;justify-content:flex-end}.topnav{top:58px;right:10px}}
+@media(max-width:480px){.checkgrid{grid-template-columns:1fr}.wrap{padding:15px 12px 50px}.hero{padding:22px}.row>*{min-width:100%}.expense{align-items:flex-start}}
+
+/* Mobile header and active-trip layout refinements */
+.site-header{display:flex;flex-flow:row nowrap;justify-content:space-between;align-items:center;gap:10px;width:100%;min-width:0}
+.site-header .brand-area{display:flex;flex:1 1 auto;align-items:center;gap:10px;min-width:0;overflow:hidden}
+.site-header .brand-area img{display:block;flex:0 0 42px;width:42px;height:42px;border-radius:11px;object-fit:cover}
+.site-header .brand-copy{flex:1 1 auto;min-width:0;overflow:hidden}
+.site-header .brand{white-space:nowrap;line-height:1.2}
+.site-header .status{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.76rem}
+.site-header .header-right{display:flex;flex:0 0 auto;align-items:center;justify-content:flex-end;flex-wrap:nowrap;margin-left:auto;min-width:44px}
+.site-header .menu-toggle{display:inline-flex;flex:0 0 44px;align-items:center;justify-content:center;width:44px;min-width:44px;height:44px;padding:0;font-size:1.25rem}
+.site-header .topnav{top:calc(100% + 8px);right:12px;max-width:min(260px,calc(100vw - 24px))}
+.active-trip-card{min-width:0}
+.active-trip-top{display:flex;flex-direction:column;gap:14px;min-width:0}
+.active-trip-copy{min-width:0}
+.trip-title{font-size:clamp(1.35rem,5.2vw,1.85rem);line-height:1.22;overflow-wrap:anywhere;word-break:normal}
+.invite-hint{overflow-wrap:anywhere}
+.trip-actions{display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;width:100%}
+.trip-actions button{flex:1 1 125px;min-width:0;white-space:normal}
+@media(max-width:850px){
+  header.site-header{flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-between!important;padding:10px 14px!important;gap:10px!important;}
+  .site-header .brand-area{flex:1 1 0%;min-width:0}
+  .site-header .header-right{flex:0 0 auto;width:auto}
+}
+@media(max-width:480px){
+  .site-header .brand-area img{flex-basis:40px;width:40px;height:40px}
+  .site-header .menu-toggle{flex-basis:42px;width:42px;min-width:42px;height:42px}
+  .site-header .topnav{top:calc(100% + 8px);right:10px}
+  .active-trip-card{padding:17px}
+  .trip-title{font-size:clamp(1.28rem,5vw,1.6rem)}
+  .trip-actions{flex-wrap:nowrap}
+  .trip-actions button{font-size:.9rem;padding:10px 9px}
+}
+
+
+/* Definitive header/menu behavior: one row on phones, closed until tapped. */
+.site-header{position:sticky;top:0;z-index:100;display:block!important;width:100%;padding:10px 14px!important;background:var(--night);}
+.site-header-row{display:flex!important;flex-flow:row nowrap!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;width:100%;min-width:0;}
+.site-header .brand-area{display:flex!important;flex:1 1 auto!important;flex-flow:row nowrap!important;align-items:center!important;gap:10px!important;min-width:0!important;overflow:hidden;}
+.site-header .brand-area img{display:block;flex:0 0 42px;width:42px;height:42px;object-fit:cover;border-radius:11px;}
+.site-header .brand-copy{flex:1 1 auto;min-width:0;overflow:hidden;}
+.site-header .brand{white-space:nowrap;line-height:1.2;}
+.site-header .status{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.site-header .menu-toggle{display:inline-flex!important;flex:0 0 44px!important;align-items:center;justify-content:center;width:44px!important;min-width:44px!important;height:44px!important;margin:0;padding:0!important;font-size:1.25rem;}
+.site-header .topnav{position:absolute;top:calc(100% + 8px);right:12px;left:auto;display:grid;gap:7px;width:min(280px,calc(100vw - 24px));max-height:calc(100dvh - 90px);overflow-y:auto;padding:10px;background:var(--night);border:1px solid #42605e;border-radius:14px;box-shadow:0 12px 32px #0006;z-index:110;}
+.site-header .topnav[hidden]{display:none!important;}
+.site-header .topnav button{width:100%;min-height:44px;}
+@media(max-width:480px){
+ .site-header{padding:10px 14px!important;}
+ .site-header .brand-area img{flex-basis:40px;width:40px;height:40px;}
+ .site-header .brand{font-size:.98rem;}
+ .site-header .status{font-size:.72rem;}
+ .site-header .menu-toggle{flex-basis:44px!important;width:44px!important;min-width:44px!important;height:44px!important;}
+}
+
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="site-header-row">
+    <div class="brand-area"><img src="./icon-192.png" alt="TripSplit app logo" width="42" height="42"><div class="brand-copy"><div class="brand">TRIP<span>SPLIT</span></div><div class="status" id="connection-status">Shared trip expense manager</div></div></div>
+    <button id="menu-toggle" class="soft menu-toggle" type="button" aria-label="Open menu" aria-controls="nav" aria-expanded="false">☰</button>
+  </div>
+  <nav class="topnav" id="nav" hidden>
+    <button data-go="dashboard">Dashboard</button><button data-go="route">Route</button>
+    <button data-go="budget">Budget</button><button data-go="expenses">Add spending</button>
+    <button data-go="history">History</button><button data-go="settlement">Settlement</button>
+    <button id="pdf-button">Download PDF</button>
+    <button id="signout-menu" class="danger" hidden>Sign out</button>
+  </nav>
+</header>
+<main class="wrap">
+<section class="hero"><div class="eyebrow">2–3 December 2026 • Brezza VXi Petrol</div><h1>Sarangpur road trip<br>expense manager</h1><p>Plan shared costs, record every payment and settle up fairly. Everyone in the trip can see the same live expense ledger.</p></section>
+
+<section id="setup" class="card authbox">
+  <h2>Connect the shared trip database</h2>
+  <p class="muted small">Enter your Supabase project URL and anon/publishable key once on this device. These are public client settings, not your database password or service-role key.</p>
+  <div class="stack">
+    <div><label class="label">Supabase project URL</label><input id="supabase-url" placeholder="https://your-project.supabase.co"></div>
+    <div><label class="label">Supabase anon / publishable key</label><input id="supabase-key" placeholder="Paste public anon/publishable key"></div>
+    <button class="primary" id="connect">Connect</button>
+  </div>
+  <p class="muted small">First-time setup: follow README.md and run supabase-schema.sql in your Supabase SQL Editor. Do not use a service-role key here.</p>
+</section>
+
+<section id="auth" class="card authbox hidden">
+  <h2>Sign in to your trip account</h2><p class="muted small">Use the email and password created for you by the trip administrator.</p>
+  <div class="stack"><input id="email" type="email" autocomplete="username" placeholder="you@example.com"><input id="password" type="password" autocomplete="current-password" placeholder="Password"><button class="primary" id="login">Log in</button></div>
+  <p class="muted small" id="auth-message"></p>
+</section>
+
+<section id="trip-gate" class="grid hidden">
+  <article class="card s6"><h2>Create a new trip</h2><div class="stack"><div><label class="label">Trip name</label><input id="new-trip-name" value="Sarangpur Road Trip • 2–3 Dec 2026"></div><div><label class="label">Your name</label><input id="new-member-name" placeholder="Your display name"></div><button class="primary" id="create-trip">Create trip & invite friends</button></div></article>
+  <article class="card s6"><h2>Join an existing trip</h2><div class="stack"><div><label class="label">Invite code</label><input id="join-code" placeholder="Enter trip invite code"></div><div><label class="label">Your name</label><input id="join-member-name" placeholder="Your display name"></div><button class="primary" id="join-trip">Join shared trip</button></div></article>
+</section>
+
+<section id="app" class="hidden">
+  <div class="card s12 active-trip-card" style="margin-bottom:16px"><div class="active-trip-top"><div class="active-trip-copy"><span class="label">Active trip</span><div class="metric trip-title" id="trip-title">Sarangpur Road Trip</div><div class="muted small invite-hint">Invite code: <b id="invite-code"></b> — share this with friends so they can join.</div></div><div class="trip-actions"><button class="soft" id="copy-invite">Copy invite code</button><button class="soft" id="switch-trip">Switch trip</button></div></div><div class="member-list" id="member-list" style="margin-top:13px"></div></div>
+
+  <section id="dashboard" class="screen active">
+    <div class="grid">
+      <article class="card s4"><span class="label">Total spending</span><div class="metric" id="dash-total">₹0</div></article>
+      <article class="card s4"><span class="label">Transactions</span><div class="metric" id="dash-count">0</div></article>
+      <article class="card s4"><span class="label">People</span><div class="metric" id="dash-people">0</div></article>
+      <article class="card s12"><h2>Sarangpur trip overview</h2><p class="muted">Use the menu to open each section. Tap the + button to record a new expense.</p><button class="primary" data-go="route">View trip route</button></article>
+    </div>
+  </section>
+  <section id="route" class="screen">
+    <article class="card"><h2>Trip route</h2>
+      <div class="route-step"><b>1. Mota Varachha, Surat</b><div class="muted small">Starting point</div></div>
+      <div class="route-step"><b>2. Shree Kashtbhanjan Dev Hanumanji Temple, Salangpur</b><div class="muted small">Main destination</div></div>
+      <div class="route-step"><b>3. Gadhada, Gujarat</b><div class="muted small">Stop on the return route</div></div>
+      <div class="route-step"><b>4. Mota Varachha, Surat</b><div class="muted small">Return</div></div>
+      <a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&origin=Mota+Varachha,+Surat&destination=Mota+Varachha,+Surat&waypoints=Shree+Kashtbhanjan+Dev+Hanumanji+Temple,+Salangpur%7CGadhada,+Gujarat&travelmode=driving">Open full route in Google Maps ↗</a>
+    </article>
+  </section>
+  <section id="budget" class="screen">
+    <div class="grid" style="margin-bottom:18px">
+    <article class="card s8"><h2>1. Select which planned costs to share</h2><p class="muted small">Tick only the costs you want included in the planned budget. Unticked costs are excluded from the estimate.</p>
+      <div class="checkgrid" id="cost-toggles">
+        <label class="check"><input type="checkbox" data-cost="fuel" checked> Petrol</label>
+        <label class="check"><input type="checkbox" data-cost="toll" checked> Tolls</label>
+        <label class="check"><input type="checkbox" data-cost="stay" checked> Stay</label>
+        <label class="check"><input type="checkbox" data-cost="food" checked> Food</label>
+        <label class="check"><input type="checkbox" data-cost="parking" checked> Parking / misc.</label>
+        <label class="check"><input type="checkbox" data-cost="other"> Other</label>
+      </div>
+      <div class="stack" style="margin-top:15px">
+        <div class="row"><div><label class="label">Petrol price (₹ per litre) — enter current pump price</label><input id="petrol-price" type="number" min="0" step="0.01" value="102"></div><div><label class="label">Estimated litres for full trip</label><input id="petrol-litres" type="number" min="0" step="0.1" value="51"></div><div><label class="label">Petrol estimate</label><div class="amount-display" id="petrol-estimate">₹5,202</div></div></div>
+        <div class="row"><div><label class="label">Tolls estimate (₹)</label><input class="plan-cost" data-cost="toll" type="number" value="850" min="0"></div><div><label class="label">Stay estimate (₹)</label><input class="plan-cost" data-cost="stay" type="number" value="1500" min="0"></div><div><label class="label">Food estimate (₹)</label><input class="plan-cost" data-cost="food" type="number" value="1700" min="0"></div></div>
+        <div class="row"><div><label class="label">Parking / misc. (₹)</label><input class="plan-cost" data-cost="parking" type="number" value="250" min="0"></div><div><label class="label">Other planned cost (₹)</label><input class="plan-cost" data-cost="other" type="number" value="0" min="0"></div><div><label class="label">Number sharing planned costs</label><div class="amount-display" id="sharing-count">3</div></div></div>
+      </div>
+    </article>
+    <article class="card s4"><h2>Planned budget</h2><span class="label">Selected cost total</span><div class="metric" id="planned-total">₹9,502</div><span class="label" style="margin-top:15px">Share per selected person</span><div class="metric green" id="planned-share">₹3,167</div><p class="muted small">Calculated from checked categories and the people selected in the sharing list below.</p><div id="plan-share-members" class="stack small"></div></article>
+    <article class="card s12"><h2>Who shares the planned costs?</h2><div class="member-list" id="planned-members"></div></article>
+    </div>
+  </section>
+
+  <section id="expenses" class="screen">
+    <div class="grid" style="margin-bottom:18px">
+    <article class="card s5"><h2>2. Add a spending</h2><p class="muted small">Enter an amount with the keypad, name the expense, choose who paid and tick who shared / ate.</p>
+      <div class="stack">
+        <div><label class="label">Amount (₹)</label><div class="amount-display" id="amount-display">0</div><div class="keypad" id="keypad" style="margin-top:8px">
+          <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button><button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button><button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button><button data-key=".">.</button><button data-key="0">0</button><button data-key="back">⌫</button><button data-key="clear" style="grid-column:span 3">Clear amount</button>
+        </div></div>
+        <div><label class="label">What was it for?</label><input id="expense-title" placeholder="e.g. Petrol at highway pump"></div>
+        <div><label class="label">Category</label><select id="expense-category"><option>Fuel</option><option>Toll</option><option>Stay</option><option>Food</option><option>Tea / Snacks</option><option>Parking</option><option>Shopping</option><option>Temple / Donation</option><option>Other</option></select></div>
+        <div><label class="label">Who paid?</label><select id="payer"></select></div>
+        <div><label class="label">Split this expense between (select who shared / ate)</label><div class="member-list" id="split-members"></div></div>
+        <div class="notice" id="split-preview">Select participants to split this expense equally.</div>
+        <button class="primary" id="add-expense">Add spending to shared ledger</button>
+      </div>
+    </article>
+    <article class="card s7"><div class="row"><div><h2>3. Trip spending ledger</h2><p class="muted small">Every entry is timestamped and visible to trip members.</p></div><div class="metric" id="actual-total">₹0</div></div><div id="expense-list"><p class="muted">No expenses added yet.</p></div></article>
+    </div>
+  </section>
+
+  <section id="history" class="screen">
+    <article class="card"><div class="row"><div><h2>Spending history</h2><p class="muted small">All recorded trip expenses with payer, participants and time.</p></div><button class="soft" id="history-pdf">Download PDF</button></div>
+      <input id="history-search" placeholder="Search expense or category">
+      <div id="history-list" style="margin-top:12px"></div>
+    </article>
+  </section>
+
+  <section id="settlement" class="screen">
+    <div class="grid">
+    <article class="card s6"><h2>4. Who paid what?</h2><div id="paid-summary"></div></article>
+    <article class="card s6"><h2>5. Final settlement — who pays whom?</h2><p class="muted small">Based on actual recorded expenses and each expense's selected split participants.</p><div id="settlement-list"><p class="muted">Add expenses to calculate settlement.</p></div></article>
+    <article class="card s12"><h2>Trip summary</h2><div class="grid"><div class="s4"><span class="label">Total recorded spending</span><div class="metric" id="summary-total">₹0</div></div><div class="s4"><span class="label">Number of expenses</span><div class="metric" id="summary-count">0</div></div><div class="s4"><span class="label">People in trip</span><div class="metric" id="summary-people">0</div></div></div><p class="muted small">Settlement uses equal shares among the people ticked for each transaction. Expenses can have different participants, for example only some people sharing a meal.</p></article>
+    </div>
+  </section>
+</section>
+</main>
+<button id="fab" class="fab hidden" aria-label="Add spending">+</button>
+<div id="toast" class="hidden"></div>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+let sb=null,user=null,trip=null,members=[],expenses=[],splits=[],amountText="",plannedSelected=new Set(),splitSelected=new Set();
+const fmt=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){$("toast").textContent=msg;$("toast").classList.remove("hidden");setTimeout(()=>$("toast").classList.add("hidden"),3200)}
+function show(id,on=true){$(id).classList.toggle("hidden",!on)}
+function getConfig(){return {url:localStorage.getItem("ts_url"),key:localStorage.getItem("ts_key")}}
+function setStatus(s){$("connection-status").textContent=s}
+function currentMember(){return members.find(m=>m.user_id===user?.id)}
+async function connect(){
+ const url=$("supabase-url").value.trim(),key=$("supabase-key").value.trim();
+ if(!url||!key)return toast("Enter the Supabase URL and public anon/publishable key.");
+ localStorage.setItem("ts_url",url);localStorage.setItem("ts_key",key);
+ sb=window.supabase.createClient(url,key);show("setup",false);
+ const {data:{session}}=await sb.auth.getSession();user=session?.user||null;
+ if(user)await afterAuth();else show("auth",true);
+ sb.auth.onAuthStateChange((_event,session)=>{user=session?.user||null;if(user)afterAuth();else{show("app",false);show("trip-gate",false);show("fab",false);$("signout-menu").hidden=true;closeMenu();show("auth",true)}});
+}
+async function afterAuth(){closeMenu();show("auth",false);$("signout-menu").hidden=false;show("fab",true);document.querySelector(".hero").classList.add("hidden");setStatus(user.email||"Signed in");await loadMyTrips()}
+async function loadMyTrips(){
+ const {data,error}=await sb.from("trip_members").select("trip_id,trips(id,name,invite_code)").eq("user_id",user.id);
+ if(error){toast(error.message);return}
+ if(data?.length){trip=data[0].trips;await loadTrip()}else{show("trip-gate",true);show("app",false)}
+}
+async function createTrip(){
+ const name=$("new-trip-name").value.trim(),memberName=$("new-member-name").value.trim();
+ if(!name||!memberName)return toast("Enter trip name and your name.");
+ const {data,error}=await sb.rpc("create_trip",{p_trip_name:name,p_member_name:memberName});
+ if(error)return toast(error.message);
+ trip=data;await loadTrip();
+}
+async function joinTrip(){
+ const code=$("join-code").value.trim().toUpperCase(),memberName=$("join-member-name").value.trim();
+ if(!code||!memberName)return toast("Enter invite code and your name.");
+ const {data,error}=await sb.rpc("join_trip",{p_invite_code:code,p_member_name:memberName});
+ if(error)return toast(error.message);
+ trip=data;await loadTrip();
+}
+async function loadTrip(){
+ show("trip-gate",false);show("app",true);$("trip-title").textContent=trip.name;$("invite-code").textContent=trip.invite_code;
+ const {data:mem,error:me}=await sb.from("trip_members").select("*").eq("trip_id",trip.id).order("created_at");
+ if(me)return toast(me.message);members=mem||[];
+ const {data:ex,error:ee}=await sb.from("expenses").select("*").eq("trip_id",trip.id).order("created_at",{ascending:false});
+ if(ee)return toast(ee.message);expenses=ex||[];
+ const {data:sp,error:se}=await sb.from("expense_splits").select("*").in("expense_id",expenses.map(e=>e.id).length?expenses.map(e=>e.id):["00000000-0000-0000-0000-000000000000"]);
+ if(se)return toast(se.message);splits=sp||[];
+ render();
+ // Subscribe to shared changes for all signed-in trip members.
+ sb.channel("trip-"+trip.id).on("postgres_changes",{event:"*",schema:"public",table:"expenses",filter:"trip_id=eq."+trip.id},()=>refreshExpenses())
+ .on("postgres_changes",{event:"*",schema:"public",table:"trip_members",filter:"trip_id=eq."+trip.id},()=>refreshMembers()).subscribe();
+}
+async function refreshExpenses(){
+ const {data:ex}=await sb.from("expenses").select("*").eq("trip_id",trip.id).order("created_at",{ascending:false});expenses=ex||[];
+ const ids=expenses.map(e=>e.id);const {data:sp}=await sb.from("expense_splits").select("*").in("expense_id",ids.length?ids:["00000000-0000-0000-0000-000000000000"]);splits=sp||[];render();
+}
+async function refreshMembers(){const {data}=await sb.from("trip_members").select("*").eq("trip_id",trip.id).order("created_at");members=data||[];render()}
+function render(){
+ $("member-list").innerHTML=members.map(m=>`<span class="member-chip">${esc(m.display_name)}${m.user_id===trip.created_by?" • owner":""}</span>`).join("");
+ $("summary-people").textContent=members.length;
+ $("payer").innerHTML=members.map(m=>`<option value="${m.id}">${esc(m.display_name)}</option>`).join("");
+ if(!plannedSelected.size)members.forEach(m=>plannedSelected.add(m.id));
+ if(!splitSelected.size)members.forEach(m=>splitSelected.add(m.id));
+ $("planned-members").innerHTML=members.map(m=>`<label class="check"><input type="checkbox" data-plan-member="${m.id}" ${plannedSelected.has(m.id)?"checked":""}> ${esc(m.display_name)}</label>`).join("");
+ $("split-members").innerHTML=members.map(m=>`<label class="check"><input type="checkbox" data-split-member="${m.id}" ${splitSelected.has(m.id)?"checked":""}> ${esc(m.display_name)}</label>`).join("");
+ document.querySelectorAll("[data-plan-member]").forEach(el=>el.addEventListener("change",()=>{el.checked?plannedSelected.add(el.dataset.planMember):plannedSelected.delete(el.dataset.planMember);calcPlan()}));
+ document.querySelectorAll("[data-split-member]").forEach(el=>el.addEventListener("change",()=>{el.checked?splitSelected.add(el.dataset.splitMember):splitSelected.delete(el.dataset.splitMember);calcSplit()}));
+ renderExpenses();calcPlan();calcSplit();renderSettlement();
+}
+function calcPlan(){
+ const checked=[...document.querySelectorAll("[data-cost]:checked")].map(x=>x.dataset.cost);
+ const price=Number($("petrol-price").value)||0,litres=Number($("petrol-litres").value)||0;
+ const vals={fuel:price*litres};
+ document.querySelectorAll(".plan-cost").forEach(x=>vals[x.dataset.cost]=Number(x.value)||0);
+ const total=checked.reduce((s,k)=>s+(vals[k]||0),0),count=plannedSelected.size;
+ $("petrol-estimate").textContent=fmt(vals.fuel);$("sharing-count").textContent=count;
+ $("planned-total").textContent=fmt(total);$("planned-share").textContent=count?fmt(total/count):fmt(0);
+ $("plan-share-members").innerHTML=count?[...plannedSelected].map(id=>{const m=members.find(x=>x.id===id);return `<div>${esc(m?.display_name||"")} — ${fmt(total/count)}</div>`}).join(""):"<span class='muted'>Select at least one person.</span>";
+}
+function calcSplit(){
+ const amt=Number(amountText)||0,count=splitSelected.size;
+ $("amount-display").textContent=amountText?fmt(Number(amountText)):fmt(0);
+ $("split-preview").textContent=count?`${count} participant(s) • ${fmt(amt/count)} each`:"Select at least one participant.";
+}
+function renderExpenses(){
+ const total=expenses.reduce((s,e)=>s+Number(e.amount),0);$("actual-total").textContent=fmt(total);$("summary-total").textContent=fmt(total);$("summary-count").textContent=expenses.length;
+ if(!expenses.length){$("expense-list").innerHTML="<p class='muted'>No expenses added yet.</p>";return}
+ $("expense-list").innerHTML=expenses.map(e=>{
+  const payer=members.find(m=>m.id===e.paid_by_member_id)?.display_name||"Unknown";
+  const people=splits.filter(s=>s.expense_id===e.id);
+  const dt=new Date(e.created_at).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"});
+  return `<div class="expense"><div><strong>${esc(e.title)} <span class="muted small">• ${esc(e.category)}</span></strong><small>Paid by ${esc(payer)} · Shared by ${people.length} · ${dt}</small></div><b>${fmt(e.amount)}</b></div>`;
+ }).join("");
+}
+function renderSettlement(){
+ const paid={},owed={};members.forEach(m=>{paid[m.id]=0;owed[m.id]=0});
+ expenses.forEach(e=>{paid[e.paid_by_member_id]=(paid[e.paid_by_member_id]||0)+Number(e.amount);const ss=splits.filter(s=>s.expense_id===e.id);ss.forEach(s=>owed[s.member_id]=(owed[s.member_id]||0)+Number(s.share_amount))});
+ $("paid-summary").innerHTML=members.map(m=>`<div class="settle"><span>${esc(m.display_name)}</span><b>${fmt(paid[m.id]||0)}</b></div>`).join("");
+ let balances=members.map(m=>({id:m.id,name:m.display_name,net:(paid[m.id]||0)-(owed[m.id]||0)}));
+ $("paid-summary").innerHTML+=`<p class="muted small">Positive means this person paid more than their share. Negative means they owe money.</p>`;
+ const creditors=balances.filter(x=>x.net>0.005).map(x=>({...x})),debtors=balances.filter(x=>x.net<-.005).map(x=>({...x}));
+ let transfers=[];
+ let i=0,j=0;
+ while(i<debtors.length&&j<creditors.length){
+  const amount=Math.min(-debtors[i].net,creditors[j].net);
+  if(amount>.005)transfers.push({from:debtors[i].name,to:creditors[j].name,amount});
+  debtors[i].net+=amount;creditors[j].net-=amount;
+  if(Math.abs(debtors[i].net)<.005)i++;if(Math.abs(creditors[j].net)<.005)j++;
+ }
+ $("settlement-list").innerHTML=transfers.length?transfers.map(t=>`<div class="settle"><span><b>${esc(t.from)}</b> pays <b>${esc(t.to)}</b></span><strong class="green">${fmt(t.amount)}</strong></div>`).join(""):"<p class='muted'>Everyone is settled, or there are no expenses yet.</p>";
+}
+
+function openScreen(id){
+ const allowed=["dashboard","route","budget","expenses","history","settlement"];
+ if(!allowed.includes(id))return;
+ document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id===id));
+ closeMenu();
+ if(id==="history")renderHistory();
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+function renderHistory(){
+ const q=($("history-search")?.value||"").trim().toLowerCase();
+ const list=expenses.filter(e=>{
+  const payer=members.find(m=>m.id===e.paid_by_member_id)?.display_name||"";
+  const people=splits.filter(s=>s.expense_id===e.id).map(s=>members.find(m=>m.id===s.member_id)?.display_name||"").join(" ");
+  return [e.title,e.category,payer,people].join(" ").toLowerCase().includes(q);
+ });
+ $("history-list").innerHTML=list.length?list.map(e=>{
+  const payer=members.find(m=>m.id===e.paid_by_member_id)?.display_name||"Unknown";
+  const people=splits.filter(s=>s.expense_id===e.id).map(s=>members.find(m=>m.id===s.member_id)?.display_name||"Unknown").join(", ");
+  const dt=new Date(e.created_at).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"});
+  return `<div class="history-item"><div><strong>${esc(e.title)}</strong><div class="muted small">${esc(e.category)} · Paid by ${esc(payer)} · Shared by ${esc(people)} · ${esc(dt)}</div></div><b>${fmt(e.amount)}</b></div>`;
+ }).join(""):"<p class='muted'>No matching expenses yet.</p>";
+}
+
+function downloadPdf(){
+ const total=expenses.reduce((a,e)=>a+Number(e.amount),0);
+ const rows=expenses.map((e,i)=>{const payer=members.find(m=>m.id===e.paid_by_member_id)?.display_name||"Unknown";const who=splits.filter(x=>x.expense_id===e.id).map(x=>members.find(m=>m.id===x.member_id)?.display_name||"Unknown").join(", ");return `<tr><td>${i+1}</td><td>${esc(new Date(e.created_at).toLocaleString("en-IN"))}</td><td>${esc(e.title)}</td><td>${esc(e.category)}</td><td>${esc(payer)}</td><td>${esc(who)}</td><td>${fmt(e.amount)}</td></tr>`}).join("");
+ const w=window.open("","_blank");if(!w)return toast("Allow pop-ups to create the PDF.");
+ w.document.write(`<html><head><title>TripSplit Report</title><style>body{font:12px Arial;padding:24px;color:#172326}h1,h2{color:#0A0F14}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:7px;text-align:left}th{background:#0A0F14;color:#EADCC8}.total{font-size:20px;font-weight:bold}footer{margin-top:30px;text-align:center}</style></head><body><h1>TripSplit — Sarangpur Road Trip</h1><p>Route: Mota Varachha → Sarangpur → Gadhada → Surat</p><p class="total">Total recorded spending: ${fmt(total)}</p><h2>Complete spending history</h2><table><tr><th>#</th><th>Date & time</th><th>Expense</th><th>Category</th><th>Paid by</th><th>Shared by</th><th>Amount</th></tr>${rows}</table><footer>All amounts in Indian Rupees · © DK</footer><script>window.onload=()=>window.print()<\/script>
+</body></html>`);w.document.close();
+}
+$("connect").onclick=connect;
+$("login").onclick=async()=>{const email=$("email").value.trim(),password=$("password").value;if(!email||!password)return toast("Enter email and password.");const {error}=await sb.auth.signInWithPassword({email,password});if(error){$("auth-message").textContent=error.message;return} $("auth-message").textContent="Login successful.";};
+$("create-trip").onclick=createTrip;$("join-trip").onclick=joinTrip;
+$("signout-menu").onclick=async()=>{if(!sb)return;const {error}=await sb.auth.signOut();if(error)return toast(error.message);location.reload()};
+$("switch-trip").onclick=()=>{trip=null;closeMenu();show("app",false);show("trip-gate",true)};
+$("copy-invite").onclick=async()=>{await navigator.clipboard.writeText(trip.invite_code);toast("Invite code copied.")};
+document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>openScreen(b.dataset.go));
+function closeMenu(){
+ const nav=$("nav");
+ if(nav)nav.hidden=true;
+ const toggle=$("menu-toggle");
+ if(toggle){toggle.setAttribute("aria-expanded","false");toggle.setAttribute("aria-label","Open menu");}
+}
+function toggleMenu(){
+ const nav=$("nav");
+ if(!nav)return;
+ nav.hidden=!nav.hidden;
+ const open=!nav.hidden;
+ $("menu-toggle").setAttribute("aria-expanded",String(open));
+ $("menu-toggle").setAttribute("aria-label",open?"Close menu":"Open menu");
+}
+// Always start with the navigation closed, including when restoring an auth session.
+closeMenu();
+$("menu-toggle").addEventListener("click",toggleMenu);
+document.addEventListener("click",event=>{
+ if(!event.target.closest(".site-header"))closeMenu();
+});
+document.addEventListener("keydown",event=>{if(event.key==="Escape")closeMenu();});
+$("fab").onclick=()=>openScreen("expenses");
+$("history-search").addEventListener("input",renderHistory);
+$("pdf-button").onclick=downloadPdf;$("history-pdf").onclick=downloadPdf;
+document.querySelectorAll("[data-cost],.plan-cost,#petrol-price,#petrol-litres").forEach(x=>x.addEventListener("input",calcPlan));
+$("keypad").addEventListener("click",e=>{const k=e.target.dataset.key;if(!k)return;if(k==="clear")amountText="";else if(k==="back")amountText=amountText.slice(0,-1);else if(k==="."&&!amountText.includes("."))amountText=amountText?amountText+".":"0.";else if(k!==".")amountText=(amountText==="0"?"":amountText)+k;calcSplit()});
+$("add-expense").onclick=async()=>{
+ const amount=Number(amountText),title=$("expense-title").value.trim(),payerId=$("payer").value,ids=[...splitSelected];
+ if(!amount||amount<=0||!title||!payerId||!ids.length)return toast("Enter an amount and name, choose who paid and select at least one participant.");
+ const share=amount/ids.length,rows=ids.map(id=>({member_id:id,share_amount:Math.round(share*100)/100}));
+ // Allocate any rounding remainder to the last participant so shares add up exactly.
+ const sum=rows.reduce((s,r)=>s+r.share_amount,0);rows[rows.length-1].share_amount=Math.round((rows[rows.length-1].share_amount+(amount-sum))*100)/100;
+ const {error}=await sb.rpc("add_trip_expense",{p_trip_id:trip.id,p_title:title,p_category:$("expense-category").value,p_amount:Math.round(amount*100)/100,p_paid_by_member_id:payerId,p_splits:rows});
+ if(error)return toast(error.message);
+ amountText="";$("expense-title").value="";calcSplit();await refreshExpenses();toast("Expense added to the shared trip ledger.");
+};
+const cfg=getConfig();
+if(cfg.url&&cfg.key){$("supabase-url").value=cfg.url;$("supabase-key").value=cfg.key;connect()}
+})();
+</script>
+
+</body></html>
